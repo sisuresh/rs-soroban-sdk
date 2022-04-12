@@ -129,6 +129,11 @@ pub(crate) mod ledger {
         pub(crate) fn get_contract_data(key: Val) -> Val;
         #[link_name = "$5"]
         pub(crate) fn del_contract_data(key: Val) -> Val;
+
+        #[link_name = "$6"]
+        pub(crate) fn create_account(src: Val, dst: Val, starting_balance: Val) -> Val;
+        #[link_name = "$7"]
+        pub(crate) fn create_trust_line(src: Val, asset: Val) -> Val;
     }
 }
 

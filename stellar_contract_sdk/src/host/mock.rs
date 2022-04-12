@@ -183,6 +183,14 @@ pub(crate) mod ledger {
         todo!()
     }
 
+    pub(crate) unsafe fn create_account(src: Val, dst: Val, starting_balance: Val) -> Val {
+        todo!()
+    }
+
+    pub(crate) unsafe fn create_trust_line(src: Val, asset: Val) -> Val {
+        todo!()
+    }
+
     pub(crate) unsafe fn put_contract_data(key: Val, val: Val) -> Val {
         MOCK_HOST.with(|h| h.borrow_mut().put_contract_data(key, val))
     }

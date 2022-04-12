@@ -11,6 +11,16 @@ pub fn pay(src: Val, dst: Val, asset: Val, amount: Val) -> Val {
 }
 
 #[inline(always)]
+pub fn create_account(src: Val, dst: Val, asset: Val, starting_balance: Val) -> Val {
+    unsafe { host::ledger::pay(src, dst, asset, starting_balance) }
+}
+
+#[inline(always)]
+pub fn create_trust_line(src: Val, asset: Val) -> Val {
+    unsafe { host::ledger::create_trust_line(src, asset) }
+}
+
+#[inline(always)]
 pub fn put_contract_data(k: Val, v: Val) {
     unsafe { host::ledger::put_contract_data(k, v) };
 }
