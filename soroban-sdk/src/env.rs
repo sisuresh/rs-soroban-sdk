@@ -46,7 +46,7 @@ pub type EnvVal = internal::EnvVal<Env, RawVal>;
 pub type EnvObj = internal::EnvVal<Env, Object>;
 
 use crate::Events;
-use crate::{Bytes, BytesN, ContractData, Ledger};
+use crate::{Bytes, BytesN, ContractData, Ledger, Vec};
 
 /// The [Env] type provides access to the environment the contract is executing
 /// within.
@@ -221,6 +221,11 @@ impl Env {
     #[doc(hidden)]
     pub fn log_value<V: IntoVal<Env, RawVal>>(&self, v: V) {
         internal::Env::log_value(self, v.into_val(self));
+    }
+
+    pub fn get_current_call_stack(&self) -> Vec<(BytesN<32>, Symbol)> {
+        let stack = internal::Env::get_current_call_stack(self);
+        stack.try_into_val(self).unwrap()
     }
 }
 

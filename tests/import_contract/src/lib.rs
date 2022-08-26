@@ -1,5 +1,5 @@
 #![no_std]
-use soroban_sdk::{contractimpl, BytesN, Env};
+use soroban_sdk::{contractimpl, symbol, BytesN, Env};
 
 const ADD_CONTRACT_ID: [u8; 32] = [0; 32];
 mod addcontract {
@@ -13,6 +13,13 @@ pub struct Contract;
 #[contractimpl]
 impl Contract {
     pub fn add_with(env: Env, x: i32, y: i32) -> i32 {
+        let stack = env.get_current_call_stack();
+        assert_eq!(stack.len(), 1);
+
+        let c = stack.first().unwrap().unwrap();
+        assert_eq!(c.0, BytesN::from_array(&env, &[1u8; 32]));
+        assert_eq!(c.1, symbol!("add_with"));
+
         addcontract::Client::add(&env, &BytesN::from_array(&env, &ADD_CONTRACT_ID), x, y)
     }
 }
