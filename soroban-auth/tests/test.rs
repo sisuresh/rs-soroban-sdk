@@ -7,36 +7,47 @@ use soroban_auth::{
     SignaturePayloadV0,
 };
 use soroban_sdk::testutils::ed25519::Sign;
-use soroban_sdk::{contractimpl, contracttype, symbol, BigInt, BytesN, Env, IntoVal};
+use soroban_sdk::{contractimpl, contracttype, symbol, vec, BigInt, BytesN, Env, IntoVal, Vec};
 
 #[contracttype]
 pub enum DataKey {
-    Nonce(Identifier),
+    Nonce(Vec<Identifier>),
 }
 
-fn read_nonce(e: &Env, id: Identifier) -> BigInt {
-    let key = DataKey::Nonce(id);
+fn read_nonce(e: &Env, ids: Vec<Identifier>) -> BigInt {
+    let key = DataKey::Nonce(ids);
     e.contract_data()
         .get(key)
         .unwrap_or_else(|| Ok(BigInt::zero(e)))
         .unwrap()
 }
 
-struct NonceForSignature(Signature);
+struct NonceForSignature(Vec<Signature>);
 
 impl NonceAuth for NonceForSignature {
-    fn read_nonce(e: &Env, id: Identifier) -> BigInt {
-        read_nonce(e, id)
+    fn read_nonce(&self, e: &Env) -> BigInt {
+        //TODO: key is generated twice
+        //TODO: figure out how to use collect() here
+        let mut ids = Vec::<Identifier>::new(e);
+        self.0
+            .iter()
+            .for_each(|s| ids.push_back(s.unwrap().get_identifier(e)));
+        read_nonce(e, ids)
     }
 
-    fn read_and_increment_nonce(&self, e: &Env, id: Identifier) -> BigInt {
-        let key = DataKey::Nonce(id.clone());
-        let nonce = Self::read_nonce(e, id);
+    fn read_and_consume_nonce(&self, e: &Env) -> BigInt {
+        let mut ids = Vec::<Identifier>::new(e);
+        self.0
+            .iter()
+            .for_each(|s| ids.push_back(s.unwrap().get_identifier(e)));
+
+        let key = DataKey::Nonce(ids);
+        let nonce = Self::read_nonce(&self, e);
         e.contract_data().set(key, &nonce + 1);
         nonce
     }
 
-    fn signature(&self) -> &Signature {
+    fn signatures(&self) -> &Vec<Signature> {
         &self.0
     }
 }
@@ -50,15 +61,15 @@ impl TestContract {
 
         check_auth(
             &e,
-            &NonceForSignature(sig),
+            &NonceForSignature(vec![&e, sig]),
             nonce.clone(),
             symbol!("verify_sig"),
             (&auth_id, nonce).into_val(&e),
         );
     }
 
-    pub fn nonce(e: Env, id: Identifier) -> BigInt {
-        read_nonce(&e, id)
+    pub fn nonce(e: Env, ids: Vec<Identifier>) -> BigInt {
+        read_nonce(&e, ids)
     }
 }
 
@@ -79,7 +90,7 @@ fn test() {
 
     let kp = generate_keypair();
     let id = make_identifier(&env, &kp);
-    let nonce = client.nonce(&id);
+    let nonce = client.nonce(&vec![&env, id.clone()]);
 
     let msg = SignaturePayload::V0(SignaturePayloadV0 {
         function: symbol!("verify_sig"),

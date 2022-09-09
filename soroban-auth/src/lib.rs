@@ -8,6 +8,8 @@ pub use crate::public_types::{
     SignaturePayloadV0,
 };
 
+//TODO:update example
+
 /// Users of this module will need to pass a struct to check_auth that
 /// implements NonceAuth. NonceAuth should manage nonces in the contracts
 /// storage, and wrap the Signature being verified.
@@ -49,19 +51,19 @@ pub use crate::public_types::{
 /// ```
 pub trait NonceAuth {
     /// Return the nonce stored in the contract.
-    fn read_nonce(e: &Env, id: Identifier) -> BigInt;
-    /// Return the nonce stored in the contract, and then increment it.
-    fn read_and_increment_nonce(&self, e: &Env, id: Identifier) -> BigInt;
+    fn read_nonce(&self, e: &Env) -> BigInt;
+    /// Return the nonce stored in the contract, and then consume it.
+    fn read_and_consume_nonce(&self, e: &Env) -> BigInt;
     /// Return the Signature used for authorization.
-    fn signature(&self) -> &Signature;
+    fn signatures(&self) -> &Vec<Signature>;
 }
 
-fn check_ed25519_auth(env: &Env, auth: &Ed25519Signature, function: Symbol, args: Vec<RawVal>) {
+fn check_ed25519_auth(env: &Env, auth: &Ed25519Signature, function: Symbol, args: &Vec<RawVal>) {
     let msg = SignaturePayloadV0 {
         function,
         contract: env.get_current_contract(),
         network: env.ledger().network_passphrase(),
-        args,
+        args: args.clone(),
     };
     let msg_bin = SignaturePayload::V0(msg).serialize(env);
 
@@ -72,14 +74,14 @@ fn check_ed25519_auth(env: &Env, auth: &Ed25519Signature, function: Symbol, args
     );
 }
 
-fn check_account_auth(env: &Env, auth: &AccountSignatures, function: Symbol, args: Vec<RawVal>) {
+fn check_account_auth(env: &Env, auth: &AccountSignatures, function: Symbol, args: &Vec<RawVal>) {
     let acc = Account::from_public_key(&auth.account_id).unwrap();
 
     let msg = SignaturePayloadV0 {
         function,
         contract: env.get_current_contract(),
         network: env.ledger().network_passphrase(),
-        args,
+        args: args.clone(),
     };
     let msg_bytes = SignaturePayload::V0(msg).serialize(env);
 
@@ -123,28 +125,28 @@ pub fn check_auth<T>(env: &Env, auth: &T, nonce: BigInt, function: Symbol, args:
 where
     T: NonceAuth,
 {
-    match auth.signature() {
-        Signature::Contract => {
-            if nonce != BigInt::from_i32(env, 0) {
-                panic!("nonce should be zero for Contract")
+    for sig in auth.signatures().iter() {
+        match sig.unwrap() {
+            Signature::Contract => {
+                if nonce != BigInt::from_i32(env, 0) {
+                    panic!("nonce should be zero for Contract")
+                }
+                env.get_invoking_contract();
             }
-            env.get_invoking_contract();
-        }
-        Signature::Ed25519(kea) => {
-            let stored_nonce =
-                auth.read_and_increment_nonce(env, Identifier::Ed25519(kea.public_key.clone()));
-            if nonce != stored_nonce {
-                panic!("incorrect nonce")
+            Signature::Ed25519(kea) => {
+                let stored_nonce = auth.read_and_consume_nonce(env);
+                if nonce != stored_nonce {
+                    panic!("incorrect nonce")
+                }
+                check_ed25519_auth(env, &kea, function, &args)
             }
-            check_ed25519_auth(env, &kea, function, args)
-        }
-        Signature::Account(kaa) => {
-            let stored_nonce =
-                auth.read_and_increment_nonce(env, Identifier::Account(kaa.account_id.clone()));
-            if nonce != stored_nonce {
-                panic!("incorrect nonce")
+            Signature::Account(kaa) => {
+                let stored_nonce = auth.read_and_consume_nonce(env);
+                if nonce != stored_nonce {
+                    panic!("incorrect nonce")
+                }
+                check_account_auth(env, &kaa, function, &args)
             }
-            check_account_auth(env, &kaa, function, args)
         }
     }
 }
