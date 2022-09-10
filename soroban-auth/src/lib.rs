@@ -62,6 +62,7 @@ fn check_ed25519_auth(env: &Env, auth: &Ed25519Signature, function: Symbol, args
     let msg = SignaturePayloadV0 {
         function,
         contract: env.get_current_contract(),
+        context: env.get_parent_call_stack(),
         network: env.ledger().network_passphrase(),
         args: args.clone(),
     };
@@ -80,6 +81,7 @@ fn check_account_auth(env: &Env, auth: &AccountSignatures, function: Symbol, arg
     let msg = SignaturePayloadV0 {
         function,
         contract: env.get_current_contract(),
+        context: env.get_parent_call_stack(),
         network: env.ledger().network_passphrase(),
         args: args.clone(),
     };

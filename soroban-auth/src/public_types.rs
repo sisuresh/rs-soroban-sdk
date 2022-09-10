@@ -43,8 +43,10 @@ pub enum Identifier {
 #[derive(Clone)]
 #[contracttype(lib = "soroban_auth")]
 pub struct SignaturePayloadV0 {
+    //TODO: redundant information...
     pub function: Symbol,
     pub contract: BytesN<32>,
+    pub context: Vec<(BytesN<32>, Symbol)>,
     pub network: Bytes,
     pub args: Vec<RawVal>,
 }

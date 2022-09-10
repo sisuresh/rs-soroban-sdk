@@ -95,6 +95,7 @@ fn test() {
     let msg = SignaturePayload::V0(SignaturePayloadV0 {
         function: symbol!("verify_sig"),
         contract: BytesN::from_array(&env, &[0; 32]),
+        context: vec![&env],
         network: env.ledger().network_passphrase(),
         args: (&id, &nonce).into_val(&env),
     });
