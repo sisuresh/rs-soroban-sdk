@@ -6,7 +6,7 @@ use soroban_auth::{
     check_auth, Ed25519Signature, Identifier, Signature, SignaturePayload, SignaturePayloadV0,
 };
 use soroban_sdk::testutils::ed25519::Sign;
-use soroban_sdk::{contractimpl, contracttype, symbol, BigInt, BytesN, Env, IntoVal};
+use soroban_sdk::{contractimpl, contracttype, symbol, vec, BigInt, BytesN, Env, IntoVal};
 
 #[contracttype]
 pub enum DataKey {
@@ -43,10 +43,10 @@ fn verify_and_consume_nonce(e: &Env, id: &Identifier, expected_nonce: &BigInt) {
     e.contract_data().set(key, &nonce + 1);
 }
 
-pub struct TestContract;
+pub struct SingleSigContract;
 
 #[contractimpl]
-impl TestContract {
+impl SingleSigContract {
     pub fn verify_sig(e: Env, sig: Signature, nonce: BigInt) {
         let auth_id = sig.get_identifier(&e);
 
@@ -54,7 +54,7 @@ impl TestContract {
 
         check_auth(
             &e,
-            &sig,
+            &vec![&e, sig],
             symbol!("verify_sig"),
             (&auth_id, nonce).into_val(&e),
         );
@@ -77,8 +77,8 @@ fn make_identifier(e: &Env, kp: &Keypair) -> Identifier {
 fn test() {
     let env = Env::default();
     let contract_id = BytesN::from_array(&env, &[0; 32]);
-    env.register_contract(&contract_id, TestContract);
-    let client = TestContractClient::new(&env, contract_id);
+    env.register_contract(&contract_id, SingleSigContract);
+    let client = SingleSigContractClient::new(&env, contract_id);
 
     let kp = generate_keypair();
     let id = make_identifier(&env, &kp);
