@@ -57,6 +57,7 @@ impl TestContract {
             &sig,
             symbol!("verify_sig"),
             (&auth_id, nonce).into_val(&e),
+            None,
         );
     }
 
@@ -89,6 +90,7 @@ fn test() {
         call_cntxt: vec![&env],
         contract: BytesN::from_array(&env, &[0; 32]),
         network: env.ledger().network_passphrase(),
+        salt: None,
         args: (&id, &nonce).into_val(&env),
     });
     let sig = Signature::Ed25519(Ed25519Signature {
@@ -132,6 +134,7 @@ fn test_context() {
         call_cntxt: vec![&env, (fwd_contract_id, symbol!("fwd_sig"))],
         contract: recv_contract_id.clone(),
         network: env.ledger().network_passphrase(),
+        salt: None,
         args: (&id, &nonce).into_val(&env),
     });
     let sig = Signature::Ed25519(Ed25519Signature {

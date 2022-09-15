@@ -14,6 +14,7 @@ fn check_ed25519_auth(env: &Env, auth: &Ed25519Signature, function: Symbol, args
         call_cntxt: env.get_parent_call_stack(),
         contract: env.get_current_contract(),
         network: env.ledger().network_passphrase(),
+        salt: None,
         args,
     };
     let msg_bin = SignaturePayload::V0(msg).serialize(env);
@@ -29,6 +30,7 @@ fn check_account_auth(env: &Env, auth: &AccountSignatures, function: Symbol, arg
         call_cntxt: env.get_parent_call_stack(),
         contract: env.get_current_contract(),
         network: env.ledger().network_passphrase(),
+        salt: None,
         args,
     };
     let msg_bytes = SignaturePayload::V0(msg).serialize(env);
@@ -66,7 +68,7 @@ fn check_account_auth(env: &Env, auth: &AccountSignatures, function: Symbol, arg
 /// Verifies a Signature. It's important to note that this module does
 /// not provide replay protection. That will need to be implemented by
 /// the user.
-pub fn check_auth(env: &Env, sig: &Signature, function: Symbol, args: Vec<RawVal>) {
+pub fn check_auth(env: &Env, sig: &Signature, function: Symbol, args: Vec<RawVal>, salt: Option<RawVal>) {
     match sig {
         Signature::Contract => {
             env.get_invoking_contract();

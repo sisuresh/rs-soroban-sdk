@@ -47,6 +47,7 @@ pub struct SignaturePayloadV0 {
     pub contract: BytesN<32>,
     pub call_cntxt: Vec<(BytesN<32>, Symbol)>,
     pub network: Bytes,
+    pub salt: Option<RawVal>,
     pub args: Vec<RawVal>,
 }
 
