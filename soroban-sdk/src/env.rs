@@ -695,6 +695,17 @@ impl Env {
             .unwrap()
     }
 
+    pub fn get_all_authorizations(&self) -> std::vec::Vec<(Address, Hash, Symbol, Vec<RawVal>)> {
+        let res = std::vec::Vec::new();
+        let auths = self.env_impl.get_all_authorizations().unwrap();
+
+        for auth in auths {
+            let addr: Address = Address::try_from_val(self, &auth.0).unwrap();
+            res.push((addr, auth.1, auth.2, auth.3))
+        }
+        res
+    }
+
     fn register_contract_with_contract_id_and_source(
         &self,
         contract_id: &BytesN<32>,

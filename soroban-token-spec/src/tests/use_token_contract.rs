@@ -43,6 +43,8 @@ impl TestContract {
 
 #[test]
 fn test() {
+    extern crate alloc;
+
     let env = Env::default();
     let admin = Address::random(&env);
     let token_contract_id = env.register_stellar_asset_contract(admin);
@@ -77,6 +79,22 @@ fn test() {
         "incr_allow",
         (&from, &spender, 20_i128).into_val(&env),
     ));
+
+    /* assert_eq!(test
+    .host
+    .get_all_authorizations()
+    .unwrap(), vec![(admin.sc_address(&test.host), Hash(token.id.to_array().unwrap()), Symbol::from_str("mint"), (500_i128,).into_val(&test.host).unwrap())]); */
+
+    assert!(!env.verify_top_authorization(
+        &from,
+        &token_client.contract_id,
+        "incr_allow",
+        (&from, &spender, 20_i128).into_val(&env),
+    ));
+
+    let a = env.get_all_authorizations();
+
+    assert_eq!(a, alloc::vec![]);
 
     assert_eq!(client.allowance(&from, &spender), 20);
 }
