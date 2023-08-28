@@ -176,34 +176,33 @@ impl Storage {
     /// currently executing contract's storage.
     ///
     /// The returned value is a result of converting the internal value
-    pub(crate) fn set<K, V>(&self, key: &K, val: &V, storage_type: StorageType)
+    pub(crate) fn set<K, V>(&self, key: &K, val: &V, storage_type: StorageType, flags: Option<u32>)
     where
         K: IntoVal<Env, Val>,
         V: IntoVal<Env, Val>,
     {
+        let f: Val = match flags {
+            None => ().into(),
+            Some(i) => i.into(),
+        };
         let env = &self.env;
-        internal::Env::put_contract_data(env, key.into_val(env), val.into_val(env), storage_type)
-            .unwrap_infallible();
+        internal::Env::put_contract_data(
+            env,
+            key.into_val(env),
+            val.into_val(env),
+            storage_type,
+            f,
+        )
+        .unwrap_infallible();
     }
 
-    pub(crate) fn bump<K>(
-        &self,
-        key: &K,
-        storage_type: StorageType,
-        low_expiration_watermark: u32,
-        high_expiration_watermark: u32,
-    ) where
+    pub(crate) fn bump<K>(&self, key: &K, storage_type: StorageType, min: u32)
+    where
         K: IntoVal<Env, Val>,
     {
         let env = &self.env;
-        internal::Env::bump_contract_data(
-            env,
-            key.into_val(env),
-            storage_type,
-            low_expiration_watermark.into(),
-            high_expiration_watermark.into(),
-        )
-        .unwrap_infallible();
+        internal::Env::bump_contract_data(env, key.into_val(env), storage_type, min.into())
+            .unwrap_infallible();
     }
 
     /// Removes the key and the corresponding value from the currently executing
@@ -256,19 +255,14 @@ impl Persistent {
         K: IntoVal<Env, Val>,
         V: IntoVal<Env, Val>,
     {
-        self.storage.set(key, val, StorageType::Persistent)
+        self.storage.set(key, val, StorageType::Persistent, None)
     }
 
-    pub fn bump<K>(&self, key: &K, low_expiration_watermark: u32, high_expiration_watermark: u32)
+    pub fn bump<K>(&self, key: &K, min: u32)
     where
         K: IntoVal<Env, Val>,
     {
-        self.storage.bump(
-            key,
-            StorageType::Persistent,
-            low_expiration_watermark,
-            high_expiration_watermark,
-        )
+        self.storage.bump(key, StorageType::Persistent, min)
     }
 
     #[inline(always)]
@@ -306,19 +300,14 @@ impl Temporary {
         K: IntoVal<Env, Val>,
         V: IntoVal<Env, Val>,
     {
-        self.storage.set(key, val, StorageType::Temporary)
+        self.storage.set(key, val, StorageType::Temporary, None)
     }
 
-    pub fn bump<K>(&self, key: &K, low_expiration_watermark: u32, high_expiration_watermark: u32)
+    pub fn bump<K>(&self, key: &K, min: u32)
     where
         K: IntoVal<Env, Val>,
     {
-        self.storage.bump(
-            key,
-            StorageType::Temporary,
-            low_expiration_watermark,
-            high_expiration_watermark,
-        )
+        self.storage.bump(key, StorageType::Temporary, min)
     }
 
     #[inline(always)]
@@ -356,7 +345,7 @@ impl Instance {
         K: IntoVal<Env, Val>,
         V: IntoVal<Env, Val>,
     {
-        self.storage.set(key, val, StorageType::Instance)
+        self.storage.set(key, val, StorageType::Instance, None)
     }
 
     #[inline(always)]
@@ -367,12 +356,8 @@ impl Instance {
         self.storage.remove(key, StorageType::Instance)
     }
 
-    pub fn bump(&self, low_expiration_watermark: u32, high_expiration_watermark: u32) {
-        internal::Env::bump_current_contract_instance_and_code(
-            &self.storage.env,
-            low_expiration_watermark.into(),
-            high_expiration_watermark.into(),
-        )
-        .unwrap_infallible();
+    pub fn bump(&self, min: u32) {
+        internal::Env::bump_current_contract_instance_and_code(&self.storage.env, min.into())
+            .unwrap_infallible();
     }
 }
